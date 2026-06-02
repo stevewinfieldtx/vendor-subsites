@@ -12,15 +12,110 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* ---------------------------------------------------------------------------
+   Subsite root — everything inside a tenant subsite reads from --vsn-* tokens,
+   which are composed from (archetype preset + reseller brand) at render time.
+   No component hard-codes a color; restyling a reseller is purely token swaps.
+--------------------------------------------------------------------------- */
+
+.vsn-root {
+  --vsn-primary: #1d4ed8;
+  --vsn-secondary: #0f172a;
+  --vsn-accent: #38bdf8;
+  --vsn-surface: #ffffff;
+  --vsn-surface-alt: #f8fafc;
+  --vsn-ink: #0b1120;
+  --vsn-ink-muted: #475569;
+  --vsn-radius: 16px;
+  --vsn-section-space: 7rem;
+  --vsn-font-heading: var(--font-display), Georgia, serif;
+  --vsn-font-body: var(--font-geist-sans), system-ui, sans-serif;
+
+  background: var(--vsn-surface);
+  color: var(--vsn-ink);
+  font-family: var(--vsn-font-body);
+  font-feature-settings: "ss01", "cv01";
+}
+
+.vsn-root h1,
+.vsn-root h2,
+.vsn-root h3,
+.vsn-root .vsn-display {
+  font-family: var(--vsn-font-heading);
+  letter-spacing: -0.02em;
+  line-height: 1.04;
+}
+
+/* Atmospheric hero background: layered radial washes from the brand palette,
+   plus a faint grain so it never reads as a flat fill. */
+.vsn-atmosphere {
+  position: relative;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      120% 90% at 85% -10%,
+      color-mix(in oklab, var(--vsn-accent) 26%, transparent),
+      transparent 60%
+    ),
+    radial-gradient(
+      90% 80% at 5% 0%,
+      color-mix(in oklab, var(--vsn-primary) 20%, transparent),
+      transparent 55%
+    ),
+    var(--vsn-surface);
+}
+
+.vsn-atmosphere::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 240 240' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+}
+
+/* A thin gradient hairline used as a section separator / accent. */
+.vsn-rule {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    color-mix(in oklab, var(--vsn-ink) 18%, transparent),
+    transparent
+  );
+}
+
+/* ---- Orchestrated load reveal (staggered) ---- */
+@keyframes vsn-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.vsn-reveal {
+  animation: vsn-rise 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vsn-reveal {
+    animation: none;
+  }
+}
+
+/* Focus visibility for keyboard users on branded buttons. */
+.vsn-root :focus-visible {
+  outline: 2px solid var(--vsn-accent);
+  outline-offset: 2px;
 }
