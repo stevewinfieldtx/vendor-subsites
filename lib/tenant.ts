@@ -43,6 +43,15 @@ export interface ResellerContact {
   calendarUrl?: string;
 }
 
+/** A showcase video (e.g. a sample episode) — the product's hero demo. */
+export interface VendorVideo {
+  /** YouTube video id. */
+  id: string;
+  title: string;
+  /** Short context line, e.g. "Featuring Jon Lovitz". */
+  note?: string;
+}
+
 /**
  * A vendor/product the reseller sells. `collectionId` is the TDE collection
  * holding that product's 9D atoms; page copy is reconstructed from it.
@@ -52,10 +61,14 @@ export interface VendorMapping {
   slug: string;
   vendorName: string;
   productName: string;
+  /** A one-line statement of what makes this product distinctive. */
+  vendorTagline?: string;
   /** TDE collection id for this product's atoms. */
   collectionId: string;
   /** Reseller's positioning slant — fed into reconstruct() to differentiate. */
   differentiators?: string[];
+  /** Showcase videos (sample episodes). First is featured in the hero. */
+  videos?: VendorVideo[];
 }
 
 export interface ResellerConfig {
@@ -90,57 +103,70 @@ export interface ResellerConfig {
 }
 
 // ----------------------------------------------------------------------------
-// Phase 1 flagship config (PLACEHOLDER).
+// Phase 1 flagship: NINJIO (vendor) delivered by Rain Networks (reseller).
 //
-// TODO(flagship): replace with the real vendor + reseller pairing once chosen.
-// Values below are realistic stand-ins (a cybersecurity VAR reselling an MDR
-// platform) so the app renders end-to-end before live data is wired.
+// Brand tokens are Rain Networks' real palette + font (extracted from their
+// Squarespace theme): accent blue hsl(204 79% 38%), light-blue secondary accent,
+// near-black hero, Poppins. Vendor content comes from the TDE collection
+// "ninjio.com" (3,400+ atoms). Reseller voice collection: "rainnetworks.com".
 // ----------------------------------------------------------------------------
 
 export const FLAGSHIP_CONFIG: ResellerConfig = {
-  id: "flagship",
+  id: "rain-networks",
   host: "localhost:3000",
-  embedKey: "flagship-demo",
+  embedKey: "rain-ninjio",
   tier: "premium",
   integration: "subdomain",
   archetype: "showroom",
   brand: {
-    primary: "#1d4ed8",
-    secondary: "#0f172a",
-    accent: "#38bdf8",
-    headingFont: undefined,
-    bodyFont: undefined,
+    primary: "hsl(204 79% 38%)",
+    secondary: "#0b0c0e",
+    accent: "hsl(209 53% 64%)",
+    logoUrl:
+      "https://images.squarespace-cdn.com/content/v1/640dd2ad47fe32613a472b9c/752a13a6-fda8-4d37-9fb8-ba7cecc4cbda/Rain+Logo+on+White+BG.png?format=750w",
+    headingFont: "var(--font-poppins), ui-sans-serif, system-ui, sans-serif",
+    bodyFont: "var(--font-poppins), ui-sans-serif, system-ui, sans-serif",
   },
   contact: {
-    companyName: "Northpoint Technology Partners",
-    phone: "(555) 014-2200",
-    email: "solutions@northpointtech.example",
-    calendarUrl: "https://cal.example/northpoint",
+    companyName: "Rain Networks",
+    email: "sales@rainnetworks.com",
+    calendarUrl: "https://rainnetworks.com/contact",
   },
-  industries: ["Health Care & Social Assistance", "Manufacturing", "Finance & Insurance"],
+  industries: ["Managed Service Providers", "Healthcare", "Financial Services"],
   services: [
-    "Environment assessment & licensing guidance",
-    "Deployment & configuration",
-    "Integration & migration",
-    "Team training",
-    "Managed detection & response",
-    "Quarterly business reviews",
+    "Licensing & procurement",
+    "Partner onboarding & enablement",
+    "Technical pre-sales support",
+    "Deployment & rollout guidance",
+    "Consolidated billing",
+    "Dedicated account management",
   ],
-  regions: ["Pacific Northwest", "Mountain West"],
+  regions: ["United States"],
   vendors: [
     {
-      slug: "managed-detection-response",
-      vendorName: "Vendor MDR",
-      productName: "Managed Detection & Response",
-      collectionId: "flagship-mdr",
+      slug: "ninjio",
+      vendorName: "NINJIO",
+      productName: "Security Awareness Training",
+      vendorTagline:
+        "Hollywood-produced, 3–4 minute animated episodes that employees actually want to watch.",
+      collectionId: "ninjio.com",
       differentiators: [
-        "24/7 monitoring backed by a local engineering team",
-        "Cyber-insurance evidence packages",
-        "Microsoft-environment-first integration",
+        "Personalization based on each user's emotional susceptibility, not generic compliance",
+        "Story-driven microlearning with fresh episodes every month",
+        "Human-risk scoring plus PHISH3D phishing simulation",
+      ],
+      videos: [
+        {
+          id: "nVzPraG-Nzc",
+          title: "Working From Home",
+          note: "Featuring actor Jon Lovitz",
+        },
+        { id: "ukTK3IUkG_o", title: "E812 — All Bets Are Off", note: "Sample episode" },
+        { id: "UwVBau7om0o", title: "Why NINJIO Works", note: "Overview" },
       ],
     },
   ],
-  voiceCollectionId: "flagship-northpoint-voice",
+  voiceCollectionId: "rainnetworks.com",
 };
 
 /** Resolve a tenant. Phase 1: always the flagship. Phase 2: DB lookup. */

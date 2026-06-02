@@ -12,11 +12,12 @@ import {
   Button,
   Card,
   Container,
-  Eyebrow,
   Section,
   SectionHeading,
 } from "@/components/ui";
 import { IndustrySelector, RoleSelector } from "./Selectors";
+import { VideoShowcase } from "./VideoShowcase";
+import { QuarterlyDemo } from "./QuarterlyDemo";
 import { Advisor } from "@/components/advisor/Advisor";
 
 export function ShowroomSubsite({
@@ -38,6 +39,8 @@ export function ShowroomSubsite({
       <Hero content={content} premium={premium} />
 
       <PainMap content={content} />
+
+      <VideoGallery content={content} />
 
       <Capabilities content={content} />
 
@@ -75,7 +78,11 @@ export function ShowroomSubsite({
 
       <Proof content={content} />
 
-      <ContentFeed content={content} />
+      <QuarterlyDemo
+        feed={content.contentFeed}
+        next={content.nextQuarter}
+        vendorName={content.vendorName}
+      />
 
       <FinalCta content={content} />
 
@@ -118,7 +125,16 @@ function Nav({
             <span className="text-base font-semibold">{content.resellerName}</span>
           )}
           <span style={{ color: "var(--vsn-ink-muted)" }}>·</span>
-          <span className="text-sm" style={{ color: "var(--vsn-ink-muted)" }}>
+          <span
+            className="vsn-display text-base font-extrabold tracking-tight"
+            style={{ color: "var(--vsn-primary)" }}
+          >
+            {content.vendorName}
+          </span>
+          <span
+            className="hidden text-sm md:inline"
+            style={{ color: "var(--vsn-ink-muted)" }}
+          >
             {content.productName}
           </span>
         </div>
@@ -150,55 +166,75 @@ function Hero({
   const delay = (i: number): CSSProperties => ({ animationDelay: `${i * 90}ms` });
   return (
     <div className="vsn-atmosphere">
-      <Container className="grid gap-12 py-20 sm:py-28 lg:grid-cols-[1.25fr_0.75fr] lg:items-center">
+      <Container className="grid gap-12 py-20 sm:py-24 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
-          <div className="vsn-reveal" style={delay(0)}>
-            <Eyebrow>{hero.eyebrow}</Eyebrow>
+          {/* Vendor lockup — makes it unmistakable whose product this is. */}
+          <div className="vsn-reveal flex flex-wrap items-center gap-3" style={delay(0)}>
+            <span
+              className="vsn-display text-2xl font-extrabold tracking-tight"
+              style={{ color: "var(--vsn-primary)" }}
+            >
+              {content.vendorName}
+            </span>
+            <Badge>Authorized Partner · {content.resellerName}</Badge>
           </div>
           <h1
             className="vsn-reveal mt-5 font-semibold"
-            style={{ ...delay(1), fontSize: "clamp(2.5rem, 5.5vw, 4.25rem)" }}
+            style={{ ...delay(1), fontSize: "clamp(2.25rem, 5vw, 3.75rem)" }}
           >
             {hero.headline}
           </h1>
           <p
-            className="vsn-reveal mt-6 max-w-xl text-lg leading-relaxed"
+            className="vsn-reveal mt-5 max-w-xl text-lg leading-relaxed"
             style={{ ...delay(2), color: "var(--vsn-ink-muted)" }}
           >
             {hero.subheadline}
           </p>
-          <div className="vsn-reveal mt-9 flex flex-wrap items-center gap-3" style={delay(3)}>
+          <div className="vsn-reveal mt-8 flex flex-wrap items-center gap-3" style={delay(3)}>
             <Button cta={hero.primaryCta} variant="primary" />
             <Button cta={hero.secondaryCta} variant="secondary" />
             {premium && hero.aiCta ? <Button cta={hero.aiCta} variant="ghost" /> : null}
           </div>
+          {/* Compact proof strip — evidence above the fold, no longer cramped. */}
+          <div
+            className="vsn-reveal mt-9 flex flex-wrap items-center gap-x-7 gap-y-3"
+            style={delay(4)}
+          >
+            {proof.stats.map((s) => (
+              <div key={s.label} className="min-w-[5rem]">
+                <div
+                  className="vsn-display text-lg font-bold leading-none"
+                  style={{ color: "var(--vsn-primary)" }}
+                >
+                  {s.value}
+                </div>
+                <div
+                  className="mt-1 text-[11px] uppercase tracking-wide"
+                  style={{ color: "var(--vsn-ink-muted)" }}
+                >
+                  {s.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Proof rail — puts evidence above the fold (the benchmark's #1 gap). */}
-        <div className="vsn-reveal" style={delay(4)}>
-          <Card style={{ background: "color-mix(in oklab, var(--vsn-surface) 88%, transparent)" }}>
-            <div className="grid grid-cols-3 gap-4">
-              {proof.stats.map((s) => (
-                <div key={s.label}>
-                  <div
-                    className="vsn-display text-3xl font-semibold"
-                    style={{ color: "var(--vsn-primary)" }}
-                  >
-                    {s.value}
-                  </div>
-                  <div className="mt-1 text-xs" style={{ color: "var(--vsn-ink-muted)" }}>
-                    {s.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="vsn-rule my-5" />
-            <div className="flex flex-wrap gap-2">
-              {proof.badges.slice(0, 3).map((b) => (
-                <Badge key={b}>{b}</Badge>
-              ))}
-            </div>
-          </Card>
+        {/* The product's strongest asset — its video — leads above the fold. */}
+        <div className="vsn-reveal" style={delay(3)}>
+          {content.featuredVideo ? (
+            <VideoShowcase
+              video={content.featuredVideo}
+              caption={`▶ ${content.vendorTagline ?? "Watch a real sample episode."}`}
+            />
+          ) : (
+            <Card>
+              <div className="flex flex-wrap gap-2">
+                {proof.badges.slice(0, 3).map((b) => (
+                  <Badge key={b}>{b}</Badge>
+                ))}
+              </div>
+            </Card>
+          )}
         </div>
       </Container>
     </div>
@@ -259,6 +295,30 @@ function Capabilities({ content }: { content: SubsiteContent }) {
                 </p>
               ) : null}
             </div>
+          ))}
+        </div>
+      </Container>
+    </Section>
+  );
+}
+
+function VideoGallery({ content }: { content: SubsiteContent }) {
+  const videos = content.videoGallery ?? [];
+  if (!videos.length) return null;
+  return (
+    <Section id="watch" alt>
+      <Container>
+        <SectionHeading
+          eyebrow="See it in action"
+          title={`Why employees actually watch ${content.vendorName}`}
+          lead={
+            content.vendorTagline ??
+            "Short, story-driven episodes that hold attention and change behavior."
+          }
+        />
+        <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {videos.map((v) => (
+            <VideoShowcase key={v.id} video={v} />
           ))}
         </div>
       </Container>
@@ -328,49 +388,6 @@ function Proof({ content }: { content: SubsiteContent }) {
         <div className="flex flex-wrap gap-2.5">
           {content.proof.badges.map((b) => (
             <Badge key={b}>{b}</Badge>
-          ))}
-        </div>
-      </Container>
-    </Section>
-  );
-}
-
-function ContentFeed({ content }: { content: SubsiteContent }) {
-  return (
-    <Section alt>
-      <Container>
-        <SectionHeading
-          eyebrow="Always current"
-          title="Updated from the source"
-          lead="New releases and guidance flow in automatically — you never maintain this page."
-        />
-        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {content.contentFeed.map((item) => (
-            <a
-              key={item.title}
-              href={item.href ?? "#"}
-              className="group flex flex-col p-5 transition-transform hover:-translate-y-1"
-              style={{
-                background: "var(--vsn-surface)",
-                borderRadius: "var(--vsn-radius)",
-                border: "1px solid color-mix(in oklab, var(--vsn-ink) 8%, transparent)",
-              }}
-            >
-              <span
-                className="text-xs font-semibold uppercase tracking-wider"
-                style={{ color: "var(--vsn-accent)" }}
-              >
-                {item.kind}
-              </span>
-              <span className="mt-2 flex-1 text-base font-medium leading-snug">
-                {item.title}
-              </span>
-              {item.date ? (
-                <span className="mt-3 text-xs" style={{ color: "var(--vsn-ink-muted)" }}>
-                  {item.date}
-                </span>
-              ) : null}
-            </a>
           ))}
         </div>
       </Container>
