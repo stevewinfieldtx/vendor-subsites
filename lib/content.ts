@@ -87,16 +87,20 @@ export interface FeedItem {
 }
 
 /**
- * A simulated future refresh, used by the interactive "show next quarter"
- * demo control. Illustrates the breadth of what the platform auto-updates
- * from the source — no manual maintenance.
+ * A simulated future refresh, driven by the top-of-page demo control. Each
+ * present field replaces its live counterpart so the mock-up can show, side by
+ * side, exactly what the platform would auto-update from the source next quarter.
+ * Only the fields that change need to be set — the demo highlights the diff.
  */
 export interface QuarterlyUpdate {
   /** e.g. "Q3 2026". */
   label: string;
-  feed: FeedItem[];
-  newCapability: Capability;
-  statHighlight: Stat;
+  headline?: string;
+  subheadline?: string;
+  stats?: Stat[];
+  capabilities?: Capability[];
+  painMap?: PainPoint[];
+  feed?: FeedItem[];
 }
 
 export type VideoRef = VendorVideo;
@@ -267,18 +271,47 @@ export function mockContent(
     ],
     nextQuarter: {
       label: "Q3 2026",
+      headline: "Outsmart the deepfake era before your people fall for it",
+      subheadline: `Engaging, story-driven ${vendor.productName.toLowerCase()} from ${vendor.vendorName} — now with AI-threat episodes — delivered and supported by ${reseller}.`,
+      stats: [
+        { value: "Weekly", label: "new episodes" },
+        { value: "AI-DEFENSE", label: "deepfake training" },
+        { value: "AWARE", label: "human-risk platform" },
+      ],
+      capabilities: [
+        { title: "Change behavior", outcome: "Story-driven episodes that stick" },
+        { title: "Cover AI threats", outcome: "Deepfakes, voice cloning & AI phishing" },
+        { title: "Test readiness", outcome: "Adaptive phishing + deepfake simulation" },
+        { title: "Measure risk", outcome: "Quantified human-risk scoring" },
+      ],
+      painMap: [
+        {
+          problem: "Deepfake fraud",
+          impact: "AI voice clones trick staff into wiring funds",
+          solution: "Episodes that train people to verify before they act",
+        },
+        {
+          problem: "Boring compliance training",
+          impact: "Employees tune out and forget",
+          solution: "Short, story-driven episodes people actually watch",
+        },
+        {
+          problem: "Phishing exposure",
+          impact: "Untested staff fall for real attacks",
+          solution: "Adaptive phishing simulation and coaching",
+        },
+        {
+          problem: "Unmeasured risk",
+          impact: "No view of who is most vulnerable",
+          solution: "Human-risk scoring that quantifies exposure",
+        },
+      ],
       feed: [
         { title: "New episode: “Deepfake Wire Fraud”", kind: "Episode", date: "Jul 2026" },
         { title: "New episode: “Quishing — QR Code Phishing”", kind: "Episode", date: "Aug 2026" },
         { title: "Threat advisory: AI voice-cloning attacks", kind: "Advisory", date: "Sep 2026" },
         { title: "Webinar: Designing a 2027 human-risk program", kind: "Webinar", date: "Sep 2026" },
       ],
-      newCapability: {
-        title: "AI-era threat coverage",
-        outcome:
-          "Fresh episodes on deepfakes, voice cloning, and AI-assisted phishing — added as new attack patterns emerge.",
-      },
-      statHighlight: { value: "+3", label: "new episodes this quarter" },
     },
     finalCta: {
       headline: "Let's map this to your team",

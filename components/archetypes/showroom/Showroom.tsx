@@ -1,12 +1,20 @@
+"use client";
+
 /**
- * "Showroom" archetype — refined, spacious, product-forward. One of six layout
- * languages. Renders a Premium subsite from SubsiteContent + the resolved theme.
- * Server component; interactive pieces (selectors, advisor) are client islands.
+ * "Showroom" archetype — refined, spacious, product-forward. Renders a Premium
+ * subsite from SubsiteContent + the resolved theme.
+ *
+ * Demo control: a red bar at the very top (visually NOT part of the site) toggles
+ * a simulated quarterly refresh. Only CENTRALLY-CONTROLLED vendor content
+ * (hero positioning, program stats, capabilities, pain map, resource feed) swaps
+ * and gets highlighted. Partner-added content (branding, "Why us" services, CTAs,
+ * contact) never changes — that's the point of the mock-up.
  */
+import { useState } from "react";
 import type { CSSProperties } from "react";
 import { themeStyle } from "@/lib/theme";
 import type { ResellerConfig, VendorMapping } from "@/lib/tenant";
-import type { SubsiteContent } from "@/lib/content";
+import type { SubsiteContent, QuarterlyUpdate } from "@/lib/content";
 import {
   Badge,
   Button,
@@ -17,8 +25,48 @@ import {
 } from "@/components/ui";
 import { IndustrySelector, RoleSelector } from "./Selectors";
 import { VideoShowcase } from "./VideoShowcase";
-import { QuarterlyDemo } from "./QuarterlyDemo";
 import { Advisor } from "@/components/advisor/Advisor";
+
+// ---------------------------------------------------------------------------
+// Demo refresh: merge the simulated quarter over live content + diff helpers.
+// ---------------------------------------------------------------------------
+
+function applyQuarter(c: SubsiteContent, nq: QuarterlyUpdate): SubsiteContent {
+  return {
+    ...c,
+    hero: {
+      ...c.hero,
+      headline: nq.headline ?? c.hero.headline,
+      subheadline: nq.subheadline ?? c.hero.subheadline,
+    },
+    proof: nq.stats ? { ...c.proof, stats: nq.stats } : c.proof,
+    capabilities: nq.capabilities ?? c.capabilities,
+    painMap: nq.painMap ?? c.painMap,
+    contentFeed: nq.feed ?? c.contentFeed,
+  };
+}
+
+/** True when `updated` and the two values differ — i.e. this field just refreshed. */
+function changed(updated: boolean, a: unknown, b: unknown): boolean {
+  return updated && JSON.stringify(a) !== JSON.stringify(b);
+}
+
+const HL_TEXT: CSSProperties = {
+  background: "#fde047",
+  borderRadius: "4px",
+  padding: "0 0.12em",
+  boxDecorationBreak: "clone",
+  WebkitBoxDecorationBreak: "clone",
+};
+const HL_BOX: CSSProperties = {
+  background: "#fefce8",
+  outline: "2px dashed #dc2626",
+  outlineOffset: "3px",
+};
+const tHL = (on: boolean): CSSProperties => (on ? HL_TEXT : {});
+const bHL = (on: boolean): CSSProperties => (on ? HL_BOX : {});
+
+// ---------------------------------------------------------------------------
 
 export function ShowroomSubsite({
   config,
@@ -32,19 +80,31 @@ export function ShowroomSubsite({
   const premium = config.tier === "premium";
   const rootStyle = themeStyle(config.archetype, config.brand);
 
+  const nq = content.nextQuarter;
+  const [updated, setUpdated] = useState(false);
+  const live = updated && nq ? applyQuarter(content, nq) : content;
+
   return (
     <div className="vsn-root flex min-h-full flex-col" style={rootStyle}>
-      <Nav content={content} config={config} />
+      {nq ? (
+        <DemoBar
+          updated={updated}
+          label={nq.label}
+          onToggle={() => setUpdated((v) => !v)}
+        />
+      ) : null}
 
-      <Hero content={content} premium={premium} />
+      <Nav content={live} config={config} stickyTop={nq ? "2.75rem" : "0px"} />
 
-      <PainMap content={content} />
+      <Hero content={live} prev={content} premium={premium} updated={updated} />
 
-      <VideoGallery content={content} />
+      <PainMap content={live} prev={content} updated={updated} />
 
-      <Capabilities content={content} />
+      <VideoGallery content={live} />
 
-      {premium && content.roles?.length ? (
+      <Capabilities content={live} prev={content} updated={updated} />
+
+      {premium && live.roles?.length ? (
         <Section id="roles" alt>
           <Container>
             <SectionHeading
@@ -53,13 +113,13 @@ export function ShowroomSubsite({
               lead="The same platform reads differently depending on what you own. Pick your role."
             />
             <div className="mt-10">
-              <RoleSelector roles={content.roles} />
+              <RoleSelector roles={live.roles} />
             </div>
           </Container>
         </Section>
       ) : null}
 
-      {premium && content.industries?.length ? (
+      {premium && live.industries?.length ? (
         <Section id="industries">
           <Container>
             <SectionHeading
@@ -68,21 +128,18 @@ export function ShowroomSubsite({
               lead="Compliance, threats, and constraints differ by sector. Choose yours."
             />
             <div className="mt-10">
-              <IndustrySelector industries={content.industries} />
+              <IndustrySelector industries={live.industries} />
             </div>
           </Container>
         </Section>
       ) : null}
 
+      {/* Partner-added — never changes on refresh. */}
       <WhyBuyFromUs content={content} />
 
       <Proof content={content} />
 
-      <QuarterlyDemo
-        feed={content.contentFeed}
-        next={content.nextQuarter}
-        vendorName={content.vendorName}
-      />
+      <Resources content={live} prev={content} updated={updated} />
 
       <FinalCta content={content} />
 
@@ -100,18 +157,66 @@ export function ShowroomSubsite({
 }
 
 // ---------------------------------------------------------------------------
+// Demo control bar — deliberately NOT styled like the site.
+// ---------------------------------------------------------------------------
+
+function DemoBar({
+  updated,
+  label,
+  onToggle,
+}: {
+  updated: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      className="sticky top-0 z-50 flex h-11 items-center justify-between gap-3 px-4"
+      style={{
+        background: "#dc2626",
+        color: "#fff",
+        fontFamily: "ui-sans-serif, system-ui, sans-serif",
+      }}
+    >
+      <span className="flex items-center gap-2 text-xs font-semibold sm:text-sm">
+        <span aria-hidden className="text-[10px]">
+          ●
+        </span>
+        DEMO MOCK-UP — control panel, not part of the live site
+        {updated ? (
+          <span className="hidden font-normal opacity-90 md:inline">
+            · showing {label} (highlighted = centrally updated)
+          </span>
+        ) : null}
+      </span>
+      <button
+        type="button"
+        onClick={onToggle}
+        className="shrink-0 rounded px-3 py-1.5 text-xs font-bold uppercase tracking-wide transition-transform hover:-translate-y-0.5"
+        style={{ background: "#fff", color: "#dc2626" }}
+      >
+        {updated ? "↺ Reset to current" : "Quarterly Content Update"}
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 
 function Nav({
   content,
   config,
+  stickyTop,
 }: {
   content: SubsiteContent;
   config: ResellerConfig;
+  stickyTop: string;
 }) {
   return (
     <header
-      className="sticky top-0 z-40 backdrop-blur"
+      className="sticky z-40 backdrop-blur"
       style={{
+        top: stickyTop,
         background: "color-mix(in oklab, var(--vsn-surface) 82%, transparent)",
         borderBottom: "1px solid color-mix(in oklab, var(--vsn-ink) 8%, transparent)",
       }}
@@ -157,10 +262,14 @@ function Nav({
 
 function Hero({
   content,
+  prev,
   premium,
+  updated,
 }: {
   content: SubsiteContent;
+  prev: SubsiteContent;
   premium: boolean;
+  updated: boolean;
 }) {
   const { hero, proof } = content;
   const delay = (i: number): CSSProperties => ({ animationDelay: `${i * 90}ms` });
@@ -168,7 +277,7 @@ function Hero({
     <div className="vsn-atmosphere">
       <Container className="grid gap-12 py-20 sm:py-24 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div>
-          {/* Vendor lockup — makes it unmistakable whose product this is. */}
+          {/* Partner lockup — static. */}
           <div className="vsn-reveal flex flex-wrap items-center gap-3" style={delay(0)}>
             <span
               className="vsn-display text-2xl font-extrabold tracking-tight"
@@ -182,26 +291,34 @@ function Hero({
             className="vsn-reveal mt-5 font-semibold"
             style={{ ...delay(1), fontSize: "clamp(2.25rem, 5vw, 3.75rem)" }}
           >
-            {hero.headline}
+            <span style={tHL(changed(updated, hero.headline, prev.hero.headline))}>
+              {hero.headline}
+            </span>
           </h1>
           <p
             className="vsn-reveal mt-5 max-w-xl text-lg leading-relaxed"
             style={{ ...delay(2), color: "var(--vsn-ink-muted)" }}
           >
-            {hero.subheadline}
+            <span style={tHL(changed(updated, hero.subheadline, prev.hero.subheadline))}>
+              {hero.subheadline}
+            </span>
           </p>
           <div className="vsn-reveal mt-8 flex flex-wrap items-center gap-3" style={delay(3)}>
             <Button cta={hero.primaryCta} variant="primary" />
             <Button cta={hero.secondaryCta} variant="secondary" />
             {premium && hero.aiCta ? <Button cta={hero.aiCta} variant="ghost" /> : null}
           </div>
-          {/* Compact proof strip — evidence above the fold, no longer cramped. */}
+          {/* Program stats — centrally controlled. */}
           <div
             className="vsn-reveal mt-9 flex flex-wrap items-center gap-x-7 gap-y-3"
             style={delay(4)}
           >
-            {proof.stats.map((s) => (
-              <div key={s.label} className="min-w-[5rem]">
+            {proof.stats.map((s, i) => (
+              <div
+                key={s.label}
+                className="min-w-[5rem] px-1"
+                style={bHL(changed(updated, s, prev.proof.stats[i]))}
+              >
                 <div
                   className="vsn-display text-lg font-bold leading-none"
                   style={{ color: "var(--vsn-primary)" }}
@@ -219,7 +336,6 @@ function Hero({
           </div>
         </div>
 
-        {/* The product's strongest asset — its video — leads above the fold. */}
         <div className="vsn-reveal" style={delay(3)}>
           {content.featuredVideo ? (
             <VideoShowcase
@@ -241,7 +357,15 @@ function Hero({
   );
 }
 
-function PainMap({ content }: { content: SubsiteContent }) {
+function PainMap({
+  content,
+  prev,
+  updated,
+}: {
+  content: SubsiteContent;
+  prev: SubsiteContent;
+  updated: boolean;
+}) {
   return (
     <Section id="solution" alt>
       <Container>
@@ -251,8 +375,8 @@ function PainMap({ content }: { content: SubsiteContent }) {
           lead="Not a feature list — a map of what hurts and how this fixes it."
         />
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
-          {content.painMap.map((p) => (
-            <Card key={p.problem}>
+          {content.painMap.map((p, i) => (
+            <Card key={p.problem} style={bHL(changed(updated, p, prev.painMap[i]))}>
               <h3 className="text-lg font-semibold">{p.problem}</h3>
               <p className="mt-2 text-sm" style={{ color: "var(--vsn-ink-muted)" }}>
                 {p.impact}
@@ -272,41 +396,11 @@ function PainMap({ content }: { content: SubsiteContent }) {
   );
 }
 
-function Capabilities({ content }: { content: SubsiteContent }) {
-  return (
-    <Section>
-      <Container>
-        <SectionHeading
-          eyebrow="Capabilities, as outcomes"
-          title="What changes the day you turn it on"
-        />
-        <div className="mt-10 grid gap-px overflow-hidden sm:grid-cols-2"
-          style={{
-            background: "color-mix(in oklab, var(--vsn-ink) 8%, transparent)",
-            borderRadius: "var(--vsn-radius)",
-          }}
-        >
-          {content.capabilities.map((cap) => (
-            <div key={cap.title} className="p-7" style={{ background: "var(--vsn-surface)" }}>
-              <div className="text-xl font-semibold">{cap.title}</div>
-              {cap.outcome ? (
-                <p className="mt-2 text-base" style={{ color: "var(--vsn-ink-muted)" }}>
-                  {cap.outcome}
-                </p>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </Container>
-    </Section>
-  );
-}
-
 function VideoGallery({ content }: { content: SubsiteContent }) {
   const videos = content.videoGallery ?? [];
   if (!videos.length) return null;
   return (
-    <Section id="watch" alt>
+    <Section id="watch">
       <Container>
         <SectionHeading
           eyebrow="See it in action"
@@ -326,9 +420,51 @@ function VideoGallery({ content }: { content: SubsiteContent }) {
   );
 }
 
+function Capabilities({
+  content,
+  prev,
+  updated,
+}: {
+  content: SubsiteContent;
+  prev: SubsiteContent;
+  updated: boolean;
+}) {
+  return (
+    <Section alt>
+      <Container>
+        <SectionHeading
+          eyebrow="Capabilities, as outcomes"
+          title="What changes the day you turn it on"
+        />
+        <div className="mt-10 grid gap-5 sm:grid-cols-2">
+          {content.capabilities.map((cap, i) => (
+            <div
+              key={cap.title}
+              className="p-7"
+              style={{
+                background: "var(--vsn-surface)",
+                borderRadius: "var(--vsn-radius)",
+                border: "1px solid color-mix(in oklab, var(--vsn-ink) 8%, transparent)",
+                ...bHL(changed(updated, cap, prev.capabilities[i])),
+              }}
+            >
+              <div className="text-xl font-semibold">{cap.title}</div>
+              {cap.outcome ? (
+                <p className="mt-2 text-base" style={{ color: "var(--vsn-ink-muted)" }}>
+                  {cap.outcome}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      </Container>
+    </Section>
+  );
+}
+
 function WhyBuyFromUs({ content }: { content: SubsiteContent }) {
   return (
-    <Section id="why-us" alt>
+    <Section id="why-us">
       <Container className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
         <SectionHeading
           eyebrow={`Why ${content.resellerName}`}
@@ -369,7 +505,7 @@ function WhyBuyFromUs({ content }: { content: SubsiteContent }) {
 function Proof({ content }: { content: SubsiteContent }) {
   const t = content.proof.testimonials[0];
   return (
-    <Section id="proof">
+    <Section id="proof" alt>
       <Container className="grid gap-12 lg:grid-cols-2 lg:items-center">
         {t ? (
           <figure>
@@ -388,6 +524,58 @@ function Proof({ content }: { content: SubsiteContent }) {
         <div className="flex flex-wrap gap-2.5">
           {content.proof.badges.map((b) => (
             <Badge key={b}>{b}</Badge>
+          ))}
+        </div>
+      </Container>
+    </Section>
+  );
+}
+
+function Resources({
+  content,
+  prev,
+  updated,
+}: {
+  content: SubsiteContent;
+  prev: SubsiteContent;
+  updated: boolean;
+}) {
+  return (
+    <Section id="resources">
+      <Container>
+        <SectionHeading
+          eyebrow="Latest from the library"
+          title={`New from ${content.vendorName}`}
+          lead="Fresh episodes and practical guidance, published throughout the year."
+        />
+        <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {content.contentFeed.map((item, i) => (
+            <a
+              key={item.title}
+              href={item.href ?? "#"}
+              className="group flex flex-col p-5 transition-transform hover:-translate-y-1"
+              style={{
+                background: "var(--vsn-surface)",
+                borderRadius: "var(--vsn-radius)",
+                border: "1px solid color-mix(in oklab, var(--vsn-ink) 8%, transparent)",
+                ...bHL(changed(updated, item, prev.contentFeed[i])),
+              }}
+            >
+              <span
+                className="text-xs font-semibold uppercase tracking-wider"
+                style={{ color: "var(--vsn-accent)" }}
+              >
+                {item.kind}
+              </span>
+              <span className="mt-2 flex-1 text-base font-medium leading-snug">
+                {item.title}
+              </span>
+              {item.date ? (
+                <span className="mt-3 text-xs" style={{ color: "var(--vsn-ink-muted)" }}>
+                  {item.date}
+                </span>
+              ) : null}
+            </a>
           ))}
         </div>
       </Container>
